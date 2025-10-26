@@ -64,19 +64,29 @@ export const createInvoice = async (prevState: State, formData: FormData) => {
     `;
   } catch (error) {
     // If a database error occurs, return a more specific error message
-    return { message: "Database Error: Failed to creatre invoice." };
+    return { message: "Database Error: Failed to create invoice." };
   }
 
   revalidatePath("/dashboard/invoices");
   redirect("/dashboard/invoices");
 };
 
-export const updateInvoice = async (id: string, formData: FormData) => {
-  const { customerId, amount, status } = UpdateInvoice.parse({
+export const updateInvoice = async (id: string, prevState: State, formData: FormData) => {
+  const validatedFields = UpdateInvoice.safeParse({
     customerId: formData.get("customerId"),
     amount: formData.get("amount"),
     status: formData.get("status"),
   });
+
+  // If form validation fails, return errors early. Otherwise, continue.
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing field(s). Failed to update invoice."
+    }
+  }
+
+  const { customerId, amount, status } = validatedFields.data;
 
   const amountInCents = amount * 100;
 
